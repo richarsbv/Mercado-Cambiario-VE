@@ -1,4 +1,4 @@
-# Mercado Cambiario VE 🇻🇪
+# Mercado Cambiario 🇻🇪
 
 ![Dólar VE](icons/icon-192x192.png)
 
