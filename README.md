@@ -28,7 +28,7 @@ La aplicación permite calcular conversiones al instante y funciona sin conexió
 
 1. Clona este repositorio:
    ```bash
-   git clone https://github.com/richarsbv/dolar-ve.git
+   git clone https://github.com/richarsbv/Mercado-Cambiario-VE.git
    ```
 2. Abre `index.html` en tu navegador.
 3. *Opcional:* Para aprovechar todas las funciones de PWA, carga el proyecto usando un servidor local (como Live Server en VS Code).
