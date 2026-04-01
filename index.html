@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercado Cambiario - Venezuela</title>
+    <script src="./tailwind.js"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="theme-color" content="#0f172a">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans selection:bg-blue-200 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+    <!-- Pantalla de Carga (Splash Screen) -->
+    <div id="app-loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-opacity duration-700">
+        <div class="relative flex flex-col items-center">
+            <!-- Icono Pulsante -->
+            <div class="w-24 h-24 bg-emerald-600/10 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mb-8 animate-pulse shadow-2xl shadow-emerald-500/20">
+                <svg class="w-14 h-14 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <!-- Spinner -->
+            <div class="w-12 h-12 border-4 border-slate-100 dark:border-slate-800 border-t-emerald-600 dark:border-t-emerald-500 rounded-full animate-spin"></div>
+            <p class="mt-6 text-slate-400 dark:text-slate-500 font-black tracking-[0.3em] text-[10px] uppercase animate-pulse">Cargando Sistema</p>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto md:px-4 md:py-8 md:pb-24">
+        <!-- Encabezado -->
+        <header id="main-header" class="hidden flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-5 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-white transition-colors duration-300">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3 dark:text-white">
+                        <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Mercado Cambiario
+                    </h1>
+                    <button onclick="fetchData(true)" class="refresh-btn p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all shadow-sm focus:outline-none flex items-center justify-center group dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-600 mt-1 md:mt-0" title="Actualizar datos">
+                        <svg class="refresh-icon w-5 h-5 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <div class="refresh-loader hidden animate-spin w-5 h-5 border-2 border-slate-500 dark:border-slate-300 border-top-transparent rounded-full"></div>
+                    </button>
+                </div>
+                <p class="text-slate-500 mt-2 font-medium dark:text-slate-400" id="last-update-text">Obteniendo la última actualización...</p>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <span id="status-indicator" class="flex-1 md:flex-none flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
+                    Conectando...
+                </span>
+            </div>
+        </header>
+
+        <!-- Vista: Calculadora -->
+        <div id="view-calculator" class="view-section block">
+            <!-- Sección de Calculadora -->
+            <section id="calculator-section" class="mb-10 animate-fade-in">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8 transition-colors duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">Calculadora Cambiaria</h2>
+                        </div>
+                        <button onclick="fetchData(true)" class="refresh-btn p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 flex items-center justify-center group dark:bg-slate-700 dark:hover:bg-slate-600" title="Actualizar datos">
+                            <svg class="refresh-icon w-5 h-5 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <div class="refresh-loader hidden animate-spin w-5 h-5 border-2 border-white border-top-transparent rounded-full"></div>
+                        </button>
+                    </div>
+                    <!-- Calculadora -->
+                    <div class="space-y-6">
+                        <!-- Selector de Tasa -->
+                        <div class="relative">
+                            <label for="rate-selector" class="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Seleccionar Tasa de Cambio</label>
+                            <div class="relative">
+                                <select id="rate-selector" class="w-full appearance-none bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white text-lg font-medium rounded-2xl px-5 py-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600">
+                                    <option value="usd_oficial">Dólar BCV (Oficial)</option>
+                                    <option value="usd_binance">Dólar Binance (Paralelo)</option>
+                                    <option value="eur_oficial">Euro Oficial</option>
+                                    <option value="eur_binance">Euro Binance (Paralelo)</option>
+                                </select>
+                                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <svg class="w-6 h-6 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p id="current-rate-display" class="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                Tasa actual: Cargando...
+                            </p>
+                        </div>
+
+                        <!-- Inputs de Conversión Compactos -->
+                        <div class="flex flex-col gap-3 items-center">
+                            <!-- Inputs Columna Izquierda -->
+                            <div class="flex flex-col gap-1 w-full">
+                                <!-- Input VES -->
+                                <div id="input-ves-container" class="group cursor-text" onclick="setActiveInput('ves'); document.getElementById('input-ves').focus();">
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5 ml-1">Bolívares (Bs.)</label>
+                                    <div class="relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl p-3 transition-all duration-200 group-hover:border-blue-300 dark:group-hover:border-blue-500 group-focus-within:border-blue-500 group-focus-within:shadow-lg group-focus-within:shadow-blue-500/20 dark:group-focus-within:shadow-blue-500/10">
+                                        <input 
+                                            id="input-ves" 
+                                            type="text"
+                                            inputmode="none" 
+                                            placeholder="0,00" 
+                                            class="w-full bg-transparent text-2xl md:text-3xl font-black text-slate-800 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 outline-none pr-24"
+                                            onpaste="handlePaste(event, 'ves')"
+                                        >
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                            <span class="text-xs font-bold text-slate-400 dark:text-slate-500">Bs.</span>
+                                            <button onclick="copyToClipboard(currentVesValue); event.stopPropagation();" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-600 rounded-lg transition-colors focus:outline-none" title="Copiar">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Input Divisa -->
+                                <div id="input-foreign-container" class="group cursor-text" onclick="setActiveInput('foreign'); document.getElementById('input-foreign').focus();">
+                                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5 ml-1">Divisa (USD/EUR)</label>
+                                    <div class="relative bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl p-3 transition-all duration-200 group-hover:border-blue-300 dark:group-hover:border-blue-500 group-focus-within:border-blue-500 group-focus-within:shadow-lg group-focus-within:shadow-blue-500/20 dark:group-focus-within:shadow-blue-500/10">
+                                        <input 
+                                            id="input-foreign" 
+                                            type="text"
+                                            inputmode="none" 
+                                            placeholder="0,00" 
+                                            class="w-full bg-transparent text-2xl md:text-3xl font-black text-slate-800 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 outline-none pr-24"
+                                            onpaste="handlePaste(event, 'foreign')"
+                                        >
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                            <span id="currency-label" class="text-xs font-bold text-slate-400 dark:text-slate-500">USD</span>
+                                            <button onclick="copyToClipboard(currentForeignValue); event.stopPropagation();" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-600 rounded-lg transition-colors focus:outline-none" title="Copiar">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teclado Numérico Táctil -->
+                        <div class="mt-6">
+                            <div class="grid grid-cols-3 gap-2 md:gap-3 lg:gap-4 max-w-xs mx-auto">
+                                <button onclick="numpadPress('1')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">1</button>
+                                <button onclick="numpadPress('2')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">2</button>
+                                <button onclick="numpadPress('3')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">3</button>
+                                
+                                <button onclick="numpadPress('4')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">4</button>
+                                <button onclick="numpadPress('5')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">5</button>
+                                <button onclick="numpadPress('6')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">6</button>
+                                
+                                <button onclick="numpadPress('7')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">7</button>
+                                <button onclick="numpadPress('8')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">8</button>
+                                <button onclick="numpadPress('9')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">9</button>
+                                
+                                <button onclick="numpadPress(',')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">,</button>
+                                <button onclick="numpadPress('0')" class="numpad-btn bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-500 text-slate-800 dark:text-white text-xl md:text-2xl font-bold py-4 md:py-5 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150">0</button>
+                                <button id="btn-backspace" class="numpad-btn bg-slate-100 dark:bg-slate-600 border border-slate-200 dark:border-slate-500 hover:bg-slate-200 dark:hover:bg-slate-500 active:bg-slate-300 dark:active:bg-slate-400 text-slate-600 dark:text-slate-300 rounded-2xl shadow-sm hover:shadow-md active:shadow-inner transition-all duration-150 flex items-center justify-center select-none" title="Borrar (Mantén pulsado para limpiar)">
+                                    <svg class="w-6 h-6 md:w-7 md:h-7 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Vista: Precios -->
+        <div id="view-prices" class="view-section hidden">
+            <!-- Contenedor Principal -->
+            <main class="mb-10">
+                <div id="loading-state" class="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700 transition-colors duration-300">
+                    <div class="loader mb-5 border-blue-600 border-t-transparent w-12 h-12 dark:border-blue-400 dark:border-t-transparent"></div>
+                    <p class="text-slate-600 font-medium text-lg animate-pulse dark:text-slate-300">Analizando mercados cambiarios...</p>
+                </div>
+
+                <!-- Contenedor inyectado por JS -->
+                <div id="rates-container" class="hidden space-y-12">
+                    <!-- Secciones se inyectarán aquí -->
+                </div>
+            </main>
+
+            <footer class="mt-16 text-center">
+                <p class="text-sm font-medium text-slate-400 dark:text-slate-500">Datos extraídos en tiempo real desde DolarAPI.com</p>
+                <p class="text-xs text-slate-400 mt-1 dark:text-slate-600">Soporta modo sin conexión vía IndexedDB</p>
+            </footer>
+        </div>
+
+        <!-- Vista: Ajustes -->
+        <div id="view-settings" class="view-section hidden">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 md:p-8 transition-colors duration-300">
+                <div class="flex items-center gap-3 mb-8">
+                    <svg class="w-6 h-6 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-white">Ajustes</h2>
+                </div>
+                
+                <!-- Toggle Modo Oscuro -->
+                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="settings-sun-icon" class="p-2 bg-amber-100 dark:bg-slate-600 rounded-xl">
+                            <svg class="w-6 h-6 text-amber-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                        </div>
+                        <div id="settings-moon-icon" class="p-2 bg-indigo-100 dark:bg-slate-600 rounded-xl hidden">
+                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-slate-800 dark:text-white">Modo Oscuro</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Cambia entre tema claro y oscuro</p>
+                        </div>
+                    </div>
+                    <button 
+                        id="theme-toggle-settings" 
+                        onclick="toggleDarkMode()"
+                        class="relative inline-flex h-8 w-14 items-center rounded-full bg-slate-300 dark:bg-indigo-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        aria-label="Alternar modo oscuro"
+                    >
+                        <span class="sr-only">Activar modo oscuro</span>
+                        <span id="theme-toggle-knob" class="inline-block h-6 w-6 transform rounded-full bg-white transition duration-300 translate-x-1 dark:translate-x-7"></span>
+                    </button>
+                </div>
+
+                <!-- Tasa por defecto -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 mb-4">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-slate-800 dark:text-white">Tasa por defecto</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Selecciona la tasa para la calculadora</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <select id="default-rate-settings" class="w-full appearance-none bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white font-medium rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600">
+                            <option value="usd_oficial">Dólar BCV (Oficial)</option>
+                            <option value="usd_binance">Dólar Binance (Paralelo)</option>
+                            <option value="eur_oficial">Euro Oficial</option>
+                            <option value="eur_binance">Euro Binance (Paralelo)</option>
+                        </select>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <svg class="w-5 h-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acerca de -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-200 dark:border-slate-600 mb-4">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Mercado Cambiario v1.0</span>
+                    </div>
+                </div>
+
+                <!-- Botón Instalar aplicación -->
+                <button id="install-app-btn" class="hidden w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 active:shadow-inner transition-all duration-150 mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <span>Instalar aplicación</span>
+                </button>
+
+                <!-- Botón Actualizar sistema -->
+                <button id="update-app-btn" class="hidden w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 active:shadow-inner transition-all duration-150 mb-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Buscar actualizaciones</span>
+                </button>
+
+                <!-- Botón Guardar Ajustes -->
+                <button id="save-settings-btn" class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 active:shadow-inner transition-all duration-150">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    <span>Guardar Ajustes</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Notificación</div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 shadow-lg dark:shadow-slate-900/50 z-50 transition-colors duration-300">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex items-center justify-around py-2">
+                <button 
+                    class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                    data-target="view-calculator"
+                    onclick="switchView('view-calculator')"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="text-xs font-medium">Calculadora</span>
+                </button>
+                <button 
+                    class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    data-target="view-prices"
+                    onclick="switchView('view-prices')"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-xs font-medium">Precios</span>
+                </button>
+                <button 
+                    class="nav-btn flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+                    data-target="view-settings"
+                    onclick="switchView('view-settings')"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="text-xs font-medium">Ajustes</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
