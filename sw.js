@@ -1,6 +1,6 @@
 // Service Worker - Estrategia Stale-while-revalidate
 
-const CACHE_NAME = 'app-cache-v4';
+const CACHE_NAME = 'app-cache-v7';
 const STATIC_ASSETS = [
     './',
     './index.html',

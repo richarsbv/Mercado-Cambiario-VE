@@ -12,6 +12,7 @@ const API_URLS = {
 const DB_NAME = 'MercadoCambiarioVEDB';
 const DB_VERSION = 4;
 const STORE_NAME = 'rates';
+const APP_VERSION = '1.3';
 
 // --- ESTADO DOM ---
 const ratesContainer = document.getElementById('rates-container');
@@ -30,27 +31,27 @@ let currentVesValue = "";
 let currentForeignValue = "";
 
 // --- MODO OSCURO ---
-function initDarkMode() {
+function applyTheme(isDark) {
     const html = document.documentElement;
     const sunIcon = document.getElementById('sun-icon');
     const moonIcon = document.getElementById('moon-icon');
     const settingsSunIcon = document.getElementById('settings-sun-icon');
     const settingsMoonIcon = document.getElementById('settings-moon-icon');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Solo usar preferencia del sistema como fallback
-    if (prefersDark) {
+    if (isDark) {
         html.classList.add('dark');
         if (sunIcon) sunIcon.classList.add('hidden');
         if (moonIcon) moonIcon.classList.remove('hidden');
         if (settingsSunIcon) settingsSunIcon.classList.add('hidden');
         if (settingsMoonIcon) settingsMoonIcon.classList.remove('hidden');
     } else {
-        if (moonIcon) moonIcon.classList.add('hidden');
+        html.classList.remove('dark');
         if (sunIcon) sunIcon.classList.remove('hidden');
-        if (settingsMoonIcon) settingsMoonIcon.classList.add('hidden');
+        if (moonIcon) moonIcon.classList.add('hidden');
         if (settingsSunIcon) settingsSunIcon.classList.remove('hidden');
+        if (settingsMoonIcon) settingsMoonIcon.classList.add('hidden');
     }
+    updateThemeColor();
 }
 
 function toggleDarkMode() {
@@ -71,6 +72,16 @@ function toggleDarkMode() {
         if (moonIcon) moonIcon.classList.add('hidden');
         if (settingsSunIcon) settingsSunIcon.classList.remove('hidden');
         if (settingsMoonIcon) settingsMoonIcon.classList.add('hidden');
+    }
+    updateThemeColor();
+}
+
+function updateThemeColor() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+        // Igualar al fondo del bottom nav bar: bg-white (#ffffff) / dark:bg-slate-800 (#1e293b)
+        metaThemeColor.setAttribute('content', isDark ? '#1e293b' : '#ffffff');
     }
 }
 
@@ -187,7 +198,7 @@ function updateStatus(type) {
         statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> Sistema en línea`;
     } else if (type === 'offline') {
         statusIndicator.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-200');
-        statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span> Datos guardados (Offline)`;
+        statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span> Datos guardados (Sin internet)`;
     } else if (type === 'loading') {
         statusIndicator.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
         statusIndicator.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span> Sincronizando...`;
@@ -365,7 +376,7 @@ function renderGroup(title, rates, currencyKey) {
     return `
         <section class="animate-fade-in mt-10">
             <div class="flex items-center gap-3 mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">${title}</h2>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white">${title}</h2>
                 <div class="h-px bg-slate-200 flex-1"></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -444,7 +455,7 @@ function renderRates(rates) {
                         <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                         Análisis del Mercado
                     </div>
-                    <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-2">Promedio Dólar (USD)</h2>
+                    <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-2 text-white">Promedio Dólar (USD)</h2>
                     <p class="text-blue-200/90 font-medium">Calculado sumando y dividiendo los valores del dólar.</p>
                 </div>
                 
@@ -477,17 +488,39 @@ function renderRates(rates) {
     });
 
     if (mostRecentDate > 0) {
-        lastUpdateText.textContent = `Último movimiento detectado: ${formatDate(new Date(mostRecentDate))}`;
+        lastUpdateText.textContent = `Última actualizacion: ${formatDate(new Date(mostRecentDate))}`;
+    }
+}
+
+async function fetchWithTimeout(resource, options = {}) {
+    const { timeout = 30000 } = options;
+    
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(resource, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+    } catch (error) {
+        clearTimeout(id);
+        throw error;
     }
 }
 
 async function fetchEndpoint(url) {
     try {
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url);
         if (!res.ok) return [];
         return await res.json();
     } catch (e) {
         console.warn(`Error en ${url}:`, e);
+        if (e.name === 'AbortError') {
+            console.warn('La petición ha excedido el tiempo de espera (30s)');
+        }
         return [];
     }
 }
@@ -817,32 +850,16 @@ document.getElementById('save-settings-btn')?.addEventListener('click', async ()
 });
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // Timeout de seguridad: Si pasan 10 segundos y sigue el loader, quitarlo
+    setTimeout(hideAppLoader, 10000);
+
     try {
         await initDB();
         
         // Cargar ajustes desde IndexedDB
         const settings = await getSettingsFromDB();
         if (settings) {
-            // Aplicar tema desde DB
-            const html = document.documentElement;
-            const sunIcon = document.getElementById('sun-icon');
-            const moonIcon = document.getElementById('moon-icon');
-            const settingsSunIcon = document.getElementById('settings-sun-icon');
-            const settingsMoonIcon = document.getElementById('settings-moon-icon');
-            
-            if (settings.isDark) {
-                html.classList.add('dark');
-                if (sunIcon) sunIcon.classList.add('hidden');
-                if (moonIcon) moonIcon.classList.remove('hidden');
-                if (settingsSunIcon) settingsSunIcon.classList.add('hidden');
-                if (settingsMoonIcon) settingsMoonIcon.classList.remove('hidden');
-            } else {
-                html.classList.remove('dark');
-                if (sunIcon) sunIcon.classList.remove('hidden');
-                if (moonIcon) moonIcon.classList.add('hidden');
-                if (settingsSunIcon) settingsSunIcon.classList.remove('hidden');
-                if (settingsMoonIcon) settingsMoonIcon.classList.add('hidden');
-            }
+            applyTheme(settings.isDark);
             
             // Aplicar tasa por defecto
             const defaultRateSelect = document.getElementById('default-rate-settings');
@@ -855,11 +872,10 @@ window.addEventListener('DOMContentLoaded', async () => {
         } else {
             // Si no hay ajustes guardados, usar preferencia del sistema para tema
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-                document.documentElement.classList.add('dark');
-            }
+            applyTheme(prefersDark);
         }
         
+        updateThemeColor();
         await fetchData();
         // Inicializar calculadora
         setActiveInput('ves');
@@ -932,14 +948,66 @@ function setupBackspaceHold() {
 if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', async () => {
         try {
-            await navigator.serviceWorker.register('./sw.js');
+            const registration = await navigator.serviceWorker.register('./sw.js');
+            
+            // Detectar actualizaciones
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateNotification();
+                    }
+                });
+            });
+
+            // Si ya hay uno esperando al cargar
+            if (registration.waiting) {
+                showUpdateNotification();
+            }
+
         } catch (err) {
             console.warn('Service Worker falló (posible entorno sin https):', err);
+        }
+    });
+
+    // Recargar cuando el nuevo Service Worker tome el control
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
         }
     });
 } else if (window.location.protocol === 'file:') {
     console.warn('Modo local (file://) detectado: Service Worker y PWA deshabilitados. Usa un servidor local (ej. Live Server) para probar estas funciones.');
 }
+
+function showUpdateNotification() {
+    const banner = document.getElementById('update-notification');
+    if (banner) {
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+    }
+}
+
+// Eventos para el banner de actualización
+document.getElementById('refresh-app-btn')?.addEventListener('click', () => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+            if (reg && reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+        });
+    }
+});
+
+document.getElementById('close-update-btn')?.addEventListener('click', () => {
+    const banner = document.getElementById('update-notification');
+    if (banner) {
+        banner.classList.add('hidden');
+        banner.classList.remove('flex');
+    }
+});
 
 // --- PWA Install & Update Functionality ---
 
@@ -993,48 +1061,108 @@ function checkStandaloneMode() {
         document.getElementById('update-app-btn')?.classList.remove('hidden');
         // Ocultar botón de instalar
         document.getElementById('install-app-btn')?.classList.add('hidden');
+        // Mostrar badge de instalado
+        document.getElementById('pwa-status-container')?.classList.remove('hidden');
     }
 }
 
 // Verificar modo standalone al cargar
 checkStandaloneMode();
 
-// Manejar clic en botón de actualizar
-document.getElementById('update-app-btn')?.addEventListener('click', async () => {
+// --- PWA Update Logic with Version Check ---
+
+async function checkForUpdates() {
+    const statusContainer = document.getElementById('pwa-status-container');
+    const updateBtn = document.getElementById('update-app-btn');
+    
     try {
-        const btn = document.getElementById('update-app-btn');
-        const defaultText = btn.innerHTML;
-        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Actualizando...</span>`;
+        // Fetch version.json from server with cache busting
+        const response = await fetch(`./version.json?t=${Date.now()}`);
+        if (!response.ok) throw new Error('No se pudo verificar la versión');
         
-        // 1. Borrar todos los caches de PWA
-        if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        const data = await response.json();
+        const serverVersion = data.version;
+        
+        if (serverVersion === APP_VERSION) {
+            showToast('El sistema ya está actualizado (v' + APP_VERSION + ')');
+            if (statusContainer) {
+                statusContainer.textContent = 'SISTEMA ACTUALIZADO (v' + APP_VERSION + ')';
+                statusContainer.classList.remove('hidden');
+            }
+        } else {
+            showUpdateNotification();
+            showToast('Nueva versión disponible: v' + serverVersion);
         }
+    } catch (error) {
+        console.warn('Error al verificar versión:', error);
+        // Si falla la verificación, al menos refrescamos datos
+        fetchData(true);
+    }
+}
 
-        // 2. Borrar Base de Datos local
-        indexedDB.deleteDatabase(DB_NAME);
-
-        // 3. Desregistrar Service Workers activos
-        if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) {
-                await registration.unregister();
+async function performSystemUpdate() {
+    const overlay = document.getElementById('update-overlay');
+    const progressBar = document.getElementById('update-progress-bar');
+    const progressText = document.getElementById('update-progress-text');
+    
+    if (!overlay || !progressBar || !progressText) return;
+    
+    // Mostrar overlay
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    
+    const updateSteps = [
+        { progress: 10, text: 'Iniciando actualización...' },
+        { progress: 25, text: 'Cerrando conexiones de base de datos...' },
+        { progress: 45, text: 'Limpiando caché de la aplicación...' },
+        { progress: 65, text: 'Eliminando datos antiguos...' },
+        { progress: 85, text: 'Preparando reinicio de sistema...' },
+        { progress: 100, text: '¡Todo listo! Recargando...' }
+    ];
+    
+    for (const step of updateSteps) {
+        // Simular tiempo de procesamiento para feedback visual fluido
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        progressBar.style.width = `${step.progress}%`;
+        progressText.textContent = `${step.progress}% Completado - ${step.text}`;
+        
+        // Acciones reales en pasos específicos
+        if (step.progress === 25) {
+            if (db) db.close();
+        }
+        if (step.progress === 45) {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
             }
         }
-
-        showToast('Limpieza profunda completada. Reiniciando...', 3000);
-        
-        // Pequeño delay para que el usuario lea el mensaje
-        setTimeout(() => {
-            // Recarga forzada saltando el cache del navegador
-            window.location.reload(true);
-        }, 2000);
-        
-    } catch (error) {
-        console.error('Error en actualización forzada:', error);
-        showToast('Error al limpiar datos');
-        const btn = document.getElementById('update-app-btn');
-        btn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg><span>Buscar actualizaciones</span>`;
+        if (step.progress === 65) {
+            indexedDB.deleteDatabase(DB_NAME);
+        }
+        if (step.progress === 85) {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+        }
     }
+    
+    // Recarga final
+    setTimeout(() => {
+        window.location.reload(true);
+    }, 500);
+}
+
+// Manejar clic en botón de buscar actualizaciones
+document.getElementById('update-app-btn')?.addEventListener('click', async () => {
+    // Primero verificamos si hay cambios en el servidor
+    await checkForUpdates();
+});
+
+// Manejar clic en "Actualizar ahora" del banner
+document.getElementById('refresh-app-btn')?.addEventListener('click', async () => {
+    await performSystemUpdate();
 });

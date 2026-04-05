@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto md:px-4 md:py-8 md:pb-24">
+    <div class="max-w-6xl mx-auto md:px-4 md:py-8">
         <!-- Encabezado -->
         <header id="main-header" class="hidden flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-5 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-white transition-colors duration-300">
             <div>
@@ -193,7 +193,7 @@
 
             <footer class="mt-16 text-center">
                 <p class="text-sm font-medium text-slate-400 dark:text-slate-500">Datos extraídos en tiempo real desde DolarAPI.com</p>
-                <p class="text-xs text-slate-400 mt-1 dark:text-slate-600">Soporta modo sin conexión vía IndexedDB</p>
+                <p class="text-xs text-slate-400 mt-1 dark:text-slate-600">Soporta modo sin conexión (datos en el navegador)</p>
             </footer>
         </div>
 
@@ -271,7 +271,10 @@
                         <svg class="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Mercado Cambiario v1.0</span>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Mercado Cambiario v1.3</span>
+                    </div>
+                    <div id="pwa-status-container" class="hidden mt-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full animate-pulse">
+                        SISTEMA INSTALADO Y ACTUALIZADO
                     </div>
                 </div>
 
@@ -345,5 +348,42 @@
     </nav>
 
     <script src="app.js"></script>
+    <!-- Notificación de Nueva Versión -->
+    <div id="update-notification" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-[200] w-[90%] max-w-sm bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-blue-200 dark:border-blue-800 p-5 rounded-3xl shadow-2xl animate-slide-down">
+        <div class="flex items-start gap-4">
+            <div class="bg-blue-100 dark:bg-blue-900/50 p-2.5 rounded-2xl">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-bold text-slate-800 dark:text-white text-sm">¡Nueva versión disponible!</p>
+                <p class="text-slate-500 dark:text-slate-400 text-xs mt-1">Actualiza ahora para obtener las últimas mejoras y correcciones.</p>
+                <div class="flex gap-2 mt-4">
+                    <button id="refresh-app-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors">Actualizar ahora</button>
+                    <button id="close-update-btn" class="px-4 py-2.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold transition-colors">Más tarde</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Actualización -->
+    <div id="update-overlay" class="hidden fixed inset-0 z-[150] flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-sm transition-opacity duration-500">
+        <div class="relative flex flex-col items-center p-8 bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm w-[90%] animate-scale-in">
+            <div class="w-20 h-20 bg-blue-600/10 dark:bg-blue-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <svg class="w-10 h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2 text-center">Actualizando sistema</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm text-center mb-6">Por favor espere mientras instalamos las últimas mejoras...</p>
+            
+            <div class="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden mb-2">
+                <div id="update-progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-500 ease-out"></div>
+            </div>
+            <p id="update-progress-text" class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">0% Completado</p>
+        </div>
+    </div>
+
 </body>
 </html>
